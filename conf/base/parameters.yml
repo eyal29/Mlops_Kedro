@@ -1,0 +1,5 @@
+test_ratio: 0.3
+automl_max_evals: 10
+
+gcp_project_id: "<PROJET_GCP>"
+gcs_primary_folder: "<NOM_DU_BUCKET>/primary.csv"
