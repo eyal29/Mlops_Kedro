@@ -2,6 +2,7 @@
 This is a boilerplate pipeline 'training'
 generated using Kedro 1.2.0
 """
+
 import numpy as np
 import pandas as pd
 
@@ -17,7 +18,9 @@ from typing import Any, TypedDict
 from hyperopt import hp, tpe, fmin
 
 import warnings
-warnings.filterwarnings('ignore')
+
+warnings.filterwarnings("ignore")
+
 
 class ModelSpec(TypedDict, total=True):
     name: str
@@ -53,6 +56,7 @@ MODELS: list[ModelSpec] = [
     }
 ]
 
+
 def get_model_config(instance: BaseEstimator) -> ModelSpec:
     """Returns the configuration dictionary for the given model instance."""
 
@@ -61,6 +65,7 @@ def get_model_config(instance: BaseEstimator) -> ModelSpec:
         if isinstance(model_cls, type) and isinstance(instance, model_cls):
             return model_spec
     raise ValueError(f"Unsupported model: {type(instance)}")
+
 
 def train_model(
     instance: BaseEstimator,
@@ -118,12 +123,9 @@ def optimize_hyp(
 
     return fmin(fn=objective, space=search_space, algo=tpe.suggest, max_evals=max_evals)
 
+
 def auto_ml(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    max_evals: int = 40
+    X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray, max_evals: int = 40
 ) -> dict[str, BaseEstimator]:
     """
     Runs training of multiple model instances and select the most accurated based on objective function.
@@ -139,7 +141,7 @@ def auto_ml(
             dataset=(X, y),
             search_space=model_specs["params"],
             metric=lambda x, y: -f1_score(x, y),
-            max_evals=max_evals
+            max_evals=max_evals,
         )
         print("done")
         # Training the supposed best model with found hyper-parameters
