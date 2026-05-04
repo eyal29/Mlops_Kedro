@@ -39,7 +39,6 @@ steps:
       - "chmod a+x install.sh && ./install.sh && uv sync && uv run pytest ."
     env:
       - "UV_CACHE_DIR=/root/.cache/uv"
-    waitFor: ["unpack-cache"]
 
   - name: "ghcr.io/astral-sh/uv:python3.12-trixie-slim"
     id: CD
