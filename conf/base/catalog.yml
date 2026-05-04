@@ -35,3 +35,7 @@ transform_pipeline:
 model:
   type: pickle.PickleDataset
   filepath: data/06_model/model.pkl
+
+mlflow_run_id:
+  type: MemoryDataset
+
