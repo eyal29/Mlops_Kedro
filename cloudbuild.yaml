@@ -1,4 +1,35 @@
-# Liste des Cloud Builders : https://console.cloud.google.com/gcr/images/cloud-builders/GLOBAL
+# # Liste des Cloud Builders : https://console.cloud.google.com/gcr/images/cloud-builders/GLOBAL
+# steps:
+#   - name: "ghcr.io/astral-sh/uv:python3.12-trixie-slim"
+#     id: CI
+#     entrypoint: /bin/sh
+#     args:
+#       - "-c"
+#       - "chmod a+x install.sh && ./install.sh && uv sync && uv run pytest ."
+#     env:
+#       - "UV_CACHE_DIR=/root/.cache/uv" # 👈 explicit cache path
+
+#   - name: "ghcr.io/astral-sh/uv:python3.12-trixie-slim"
+#     id: CD
+#     entrypoint: /bin/bash
+#     args:
+#       - "-c"
+#       - "chmod a+x install.sh && ./install.sh && uv run kedro run"
+#     env:
+#       - "ENV=$BRANCH_NAME"
+#       - "MLFLOW_SERVER=$_MLFLOW_SERVER"
+#       - "DO_NOT_TRACK=1"
+#       - "UV_CACHE_DIR=/root/.cache/uv" # 👈 same path
+#     waitFor: ["CI"]
+
+
+# logs_bucket: gs://mlops_tp_bucket
+
+options:
+  automapSubstitutions: true
+# Variables
+substitutions:
+  _GITHUB_REPOSITORY: "eyal29/purchase_predict_api.git" # Répertoire git sans github.com
 steps:
   - name: "ghcr.io/astral-sh/uv:python3.12-trixie-slim"
     id: CI
@@ -7,7 +38,8 @@ steps:
       - "-c"
       - "chmod a+x install.sh && ./install.sh && uv sync && uv run pytest ."
     env:
-      - "UV_CACHE_DIR=/root/.cache/uv" # 👈 explicit cache path
+      - "UV_CACHE_DIR=/root/.cache/uv"
+    waitFor: ["unpack-cache"]
 
   - name: "ghcr.io/astral-sh/uv:python3.12-trixie-slim"
     id: CD
@@ -19,8 +51,26 @@ steps:
       - "ENV=$BRANCH_NAME"
       - "MLFLOW_SERVER=$_MLFLOW_SERVER"
       - "DO_NOT_TRACK=1"
-      - "UV_CACHE_DIR=/root/.cache/uv" # 👈 same path
+      - "UV_CACHE_DIR=/root/.cache/uv" 
+
     waitFor: ["CI"]
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: API Deploy
+    secretEnv: ["GITHUB_FGT_API"]
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        git clone --branch $BRANCH_NAME https://$$GITHUB_FGT_API@github.com/$_GITHUB_REPOSITORY /tmp/purchase_predict_api
+        cd /tmp/purchase_predict_api
+        gcloud builds submit \
+          --config /tmp/purchase_predict_api/cloudbuild.yaml /tmp/purchase_predict_api \
+          --substitutions=SHORT_SHA=$SHORT_SHA
+    waitFor: ["CD"]
 
-
-logs_bucket: gs://mlops_tp_bucket
+logs_bucket: "gs://mlops_tp_bucket/logs_build_cloud_build"
+timeout: 1200s
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/github-fgt-api/versions/latest
+      env: GITHUB_FGT_API # Nom de la secret
